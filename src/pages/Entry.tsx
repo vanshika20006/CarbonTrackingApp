@@ -48,12 +48,12 @@ const dietTypes = [
   { id: 'vegetarian', label: 'Vegetarian', emoji: '🥗' },
   { id: 'vegan', label: 'Vegan', emoji: '🥬' },
   { id: 'pescatarian', label: 'Pescatarian', emoji: '🐟' },
-  { id: 'omnivore', label: 'Omnivore', emoji: '🍖' },
+  // { id: 'omnivore', label: 'Omnivore', emoji: '🍖' },
 ];
 
 const bodyTypes = [
   { id: 'underweight', label: 'Underweight' },
-  { id: 'normal', label: 'Normal' },
+  // { id: 'normal', label: 'Normal' },
   { id: 'overweight', label: 'Overweight' },
   { id: 'obese', label: 'Obese' },
 ];
@@ -77,7 +77,7 @@ export default function Entry() {
     internet: 5,
     clothes: 1,
     gender: 'male',
-    body: 'normal',
+    body: 'overweight',
     diet: 'vegetarian',
     transport: 'public',
     vehicle: 'petrol',
