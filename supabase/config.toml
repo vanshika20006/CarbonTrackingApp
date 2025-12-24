@@ -1,0 +1,7 @@
+project_id = "ahigazrwwobcjcoyksgb"
+
+[functions.calculate-distance]
+verify_jwt = false
+
+[functions.eco-chat]
+verify_jwt = false
