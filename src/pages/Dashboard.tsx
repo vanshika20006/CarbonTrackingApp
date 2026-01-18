@@ -5,17 +5,7 @@ import { useDemo } from '@/contexts/DemoContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatEmissions } from '@/lib/carbonCalculations';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from 'recharts';
+import { Chart } from "react-google-charts";
 import {
   TrendingDown,
   Leaf,
@@ -110,18 +100,34 @@ export default function Dashboard() {
       const todayEntry = demoEntries[demoEntries.length - 1];
       const weeklyTotal = demoEntries.reduce((sum, e) => sum + e.total, 0);
 
-      const chartData = demoEntries.map(entry => ({
-        name: entry.date.toLocaleDateString('en-US', { weekday: 'short' }),
-        emissions: entry.total, // kg
-      }));
+      // Google Charts Data - Line Chart (Weekly Trend)
+      const lineChartData = [['Day', 'Emissions']];
+      demoEntries.forEach(entry => {
+        lineChartData.push([
+          entry.date.toLocaleDateString('en-US', { weekday: 'short' }),
+          entry.total
+        ]);
+      });
+
+      // Google Charts Data - Bar Chart (Daily Emissions)
+      // Reusing same data format as both map day to emission
+      const barChartData = [['Day', 'Emissions']];
+      demoEntries.forEach(entry => {
+        barChartData.push([
+          entry.date.toLocaleDateString('en-US', { weekday: 'short' }),
+          entry.total
+        ]);
+      });
+
 
       return {
         todayTotal: todayEntry?.total || 0,
         weeklyTotal,
-        chartData,
         entriesCount: demoEntries.length,
         todayEntriesCount: 1,
         avgEmission: weeklyTotal / demoEntries.length,
+        lineChartData,
+        barChartData
       };
     }
 
@@ -147,13 +153,16 @@ export default function Dashboard() {
     });
 
     // Last 7 days chart
-    const chartData = [];
+    const lineChartData = [['Day', 'Emissions']];
+    const barChartData = [['Day', 'Emissions']];
+
     for (let i = 6; i >= 0; i--) {
-      const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      chartData.push({
-        name: format(subDays(new Date(), i), 'EEE'),
-        emissions: entriesByDate[date] || 0, // kg
-      });
+      const dateKey = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const dayLabel = format(subDays(new Date(), i), 'EEE');
+      const val = entriesByDate[dateKey] || 0;
+
+      lineChartData.push([dayLabel, val]);
+      barChartData.push([dayLabel, val]);
     }
 
     const avgEmission =
@@ -162,20 +171,45 @@ export default function Dashboard() {
     return {
       todayTotal,
       weeklyTotal,
-      chartData,
       entriesCount: entries.length,
       todayEntriesCount: todayEntries.length,
       avgEmission,
+      lineChartData,
+      barChartData
     };
   }, [isDemoMode, demoEntries, entries]);
 
   const {
     todayTotal,
     weeklyTotal,
-    chartData,
     entriesCount,
     avgEmission,
+    lineChartData,
+    barChartData
   } = stats;
+
+  // Chart Configs
+  const lineChartOptions = {
+    title: 'Weekly Carbon Emission Trend',
+    curveType: 'function',
+    legend: { position: 'bottom' },
+    backgroundColor: 'transparent',
+    colors: ['#10b981'], // Emerald 500
+    hAxis: { title: 'Day', textStyle: { color: '#666' } },
+    vAxis: { title: 'kg CO₂', textStyle: { color: '#666' } },
+    chartArea: { width: '80%', height: '70%' },
+  };
+
+  const barChartOptions = {
+    title: 'Daily CO₂ Emissions',
+    legend: { position: 'none' },
+    backgroundColor: 'transparent',
+    colors: ['#10b981'],
+    hAxis: { title: 'Day', textStyle: { color: '#666' } },
+    vAxis: { title: 'kg CO₂', textStyle: { color: '#666' } },
+    chartArea: { width: '80%', height: '70%' },
+  };
+
 
   // ===============================
   // Loading
@@ -232,11 +266,33 @@ export default function Dashboard() {
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <ChartCard title="Weekly Trend (kg CO₂)">
-            <LineChartWrapper data={chartData} />
+            {/* GOOGLE CHART: LINE */}
+            {lineChartData.length > 1 ? (
+              <Chart
+                chartType="LineChart"
+                width="100%"
+                height="100%"
+                data={lineChartData}
+                options={lineChartOptions}
+              />
+            ) : (
+              <EmptyChart icon={<Leaf />} text="No entries yet" />
+            )}
           </ChartCard>
 
           <ChartCard title="Daily Emissions (kg CO₂)">
-            <BarChartWrapper data={chartData} />
+            {/* GOOGLE CHART: BAR */}
+            {barChartData.length > 1 ? (
+              <Chart
+                chartType="ColumnChart"
+                width="100%"
+                height="100%"
+                data={barChartData}
+                options={barChartOptions}
+              />
+            ) : (
+              <EmptyChart icon={<Calendar />} text="No data this week" />
+            )}
           </ChartCard>
         </div>
 
@@ -257,6 +313,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 // ===============================
 // Small components
@@ -302,52 +359,6 @@ function ChartCard({
         <div className="h-64">{children}</div>
       </CardContent>
     </Card>
-  );
-}
-
-function LineChartWrapper({ data }: { data: any[] }) {
-  if (!data.some(d => d.emissions > 0)) {
-    return <EmptyChart icon={<Leaf />} text="No entries yet" />;
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip formatter={(v: number) => [`${v.toFixed(1)} kg`, 'CO₂']} />
-        <Line
-          type="monotone"
-          dataKey="emissions"
-          stroke="hsl(152, 55%, 35%)"
-          strokeWidth={3}
-          dot={{ fill: 'hsl(152, 55%, 35%)' }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
-function BarChartWrapper({ data }: { data: any[] }) {
-  if (!data.some(d => d.emissions > 0)) {
-    return <EmptyChart icon={<Calendar />} text="No data this week" />;
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip formatter={(v: number) => [`${v.toFixed(1)} kg`, 'CO₂']} />
-        <Bar
-          dataKey="emissions"
-          fill="hsl(152, 55%, 35%)"
-          radius={[4, 4, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
   );
 }
 
