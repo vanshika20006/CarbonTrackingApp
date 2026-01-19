@@ -100,8 +100,10 @@ export default function Entry() {
 
   // 🌳 TREE CALCULATION HELPER
   const calculateTreesRequired = (emissionKg: number) => {
-    const CO2_PER_TREE_PER_YEAR = 21; // kg
-    return Math.ceil(emissionKg / CO2_PER_TREE_PER_YEAR);
+    // Changing to Lifetime absorption to give a more realistic "planting goal"
+    // One tree absorbs ~400-1000kg in its lifetime (approx 20-40 years)
+    const CO2_PER_TREE_LIFETIME = 400; // kg/tree (conservative lifetime estimate)
+    return Math.ceil(emissionKg / CO2_PER_TREE_LIFETIME);
   };
 
   // ML API prediction
@@ -224,7 +226,7 @@ export default function Entry() {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
 
         {/* FORM */}
-       <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information */}
           <Card>
             <CardHeader>
@@ -491,7 +493,7 @@ export default function Entry() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                1 tree absorbs approx. <b>21 kg CO₂/year</b>.
+                1 tree absorbs approx. <b>400 kg CO₂</b> in its lifetime.
               </p>
             </CardContent>
           </Card>
@@ -518,9 +520,9 @@ export default function Entry() {
 // import { supabase } from '@/integrations/supabase/client';
 // import { useToast } from '@/hooks/use-toast';
 // import { checkAndAwardBadges, getBadgeById } from '@/lib/badgeChecker';
-// import { 
-//   Car, Bike, Bus, Train, Footprints, Save, MapPin, Loader2, 
-//   ShoppingCart, Tv, Wifi, Shirt, Trash2, User, Utensils 
+// import {
+//   Car, Bike, Bus, Train, Footprints, Save, MapPin, Loader2,
+//   ShoppingCart, Tv, Wifi, Shirt, Trash2, User, Utensils
 // } from 'lucide-react';
 // import { cn } from '@/lib/utils';
 // import { format } from 'date-fns';
